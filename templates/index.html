@@ -38,6 +38,10 @@
                 <button id="sent_req">Sent Requests</button>
             </form>
         </div>
+        {% if session.get('user',None) is not none %}
+        <p id="hello">Welcome, {{ session.get('user',None) }}!</p>
+        {% endif %}
+
     </div>
     <script src="static/particle.js"></script>
 </body>

@@ -19,7 +19,7 @@
             background-color: #f2f2f2;
         } */
     </style>
-    <link rel="stylesheet" href="../static/culb_stye.css">
+    <link rel="stylesheet" href="static/culb_stye.css">
 </head>
 <body>
     <h1>Club Requests</h1>
@@ -31,6 +31,7 @@
                     <tr>
                         <th></th>
                         <th>ID</th>
+                        <th>Date/Time</th>
                         <th>Club Name</th>
                         <th>Subject</th>
                         <th>Description</th>
@@ -45,6 +46,7 @@
                         <tr class="nr">
                             <td><input type="checkbox" class="sel_ip"></td>
                             <td>{{ request.id }}</td>
+                            <td>{{ request.datetime_created }}</td>
                             <td>{{ request.club_name }}</td>
                             <td>{{ request.subject }}</td>
                             <td>{{ request.description }}</td>
@@ -64,21 +66,42 @@
             <p>No club requests found.</p>
         {% endif %}
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const checkboxes = document.querySelectorAll('.sel_ip');
-    const downloadButton = document.getElementById('down_btn');
-    downloadButton.addEventListener('click', function() {
-        const selectedCheckboxes = document.querySelectorAll('.sel_ip:checked');
-        if (selectedCheckboxes.length === 1) {
-            const requestId = selectedCheckboxes[0].closest('tr').querySelector('td:nth-child(2)').textContent;
-            window.location.href = `/download_pdf/${requestId}`;
-        } else {
-            alert('Please select exactly one request to download the attachment.');
+    document.addEventListener("DOMContentLoaded", function() {
+        const checkboxes = document.querySelectorAll('.sel_ip');
+        const downloadButton = document.getElementById('down_btn');
+        downloadButton.addEventListener('click', function() {
+            const selectedCheckboxes = document.querySelectorAll('.sel_ip:checked');
+            if (selectedCheckboxes.length === 1) {
+                const requestId = selectedCheckboxes[0].closest('tr').querySelector('td:nth-child(2)').textContent;
+                window.location.href = `/download_pdf/${requestId}`;
+            } else {
+                alert('Please select exactly one request to download the attachment.');
+            }
+        });
+        const approveDown = document.getElementById('down_pdf');
+
+        approveDown.addEventListener('click', ()=>{download_approved()});
+
+        function download_approved() {
+            checkboxes.forEach((checkbox) => {
+                let aprov = checkbox.closest('tr').querySelector('td:nth-child(8)');
+                aprov.addEventListener('change', () => {
+                    if (aprov.textContent == 'Approved') {
+                        let content = '';
+                        for(let i = 1; i < 9 ; ++i) {
+                            content += checkbox.closest('th').querySelector(`th:nth-child(${i})`) + checkbox.closest('tr').querySelector(`td:nth-child(${i})`) + '\n';
+                        }
+                        // console.log('help');
+                        // console.log(content);
+                        html2pdf().from(content).save();
+                    }
+                });
+            });
         }
     });
-});
     </script>
-    <script src="../static/particle.js"></script>
+    <script src="static/particle.js"></script>
 </body>
 </html>

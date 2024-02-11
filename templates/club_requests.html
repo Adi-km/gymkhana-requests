@@ -31,6 +31,7 @@
                     <tr>
                         <th></th>
                         <th>ID</th>
+                        <th>Date/Time</th>
                         <th>Club Name</th>
                         <th>Subject</th>
                         <th>Description</th>
@@ -45,6 +46,7 @@
                         <tr class="nr">
                             <td><input type="checkbox" class="sel_ip"></td>
                             <td>{{ request.id }}</td>
+                            <td>{{ request.datetime_created }}</td>
                             <td>{{ request.club_name }}</td>
                             <td>{{ request.subject }}</td>
                             <td>{{ request.description }}</td>
@@ -74,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const rejectBtn = document.getElementById('reject');
 
     rejectBtn.addEventListener('click', () => {
-        rejectReq();
+        rejectReq()
     });
 
     acceptBtn.addEventListener('click', function() {
