@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session,jsonify,send_file
 from flask_sqlalchemy import SQLAlchemy
 from io import BytesIO
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime, timedelta
 
 app=Flask(__name__)
 app.secret_key = 'that_is_top_sceret'
@@ -32,6 +34,7 @@ class ClubRequest(db.Model):
     curent=db.Column(db.String(100))
     approval=db.Column(db.String(100), default='Pending')
     maker=db.Column(db.String(100))
+    datetime_created = db.Column(db.DateTime, nullable=False, default=(datetime.utcnow() + timedelta(hours=5, minutes=30)).replace(microsecond=0))
     def __repr__(self):
         return f"<ClubRequest {self.id}>"
     
@@ -92,7 +95,7 @@ def authenticate():
     if user:
         session['position']=user.position
         session['user']=user.username
-        return 'Login successful'
+        return render_template("index.html")
     else:
         return 'Invalid username or password'
 
@@ -166,7 +169,7 @@ def create_account():
         
 
         db.session.commit()
-        return "Success"
+        return render_template("index.html")
     except Exception as e:
         # If an error occurs during commit, rollback the session and return an error message
         db.session.rollback()
@@ -198,54 +201,52 @@ def upload_request():
 
     else:
         return "Please Login"
-    #try:
-    subject = request.form['subject']
-    description = request.form['description']
-    attachment = request.files['attachment'].read()  # Read binary content of the uploaded file
-    money=request.form['money']
-    maker=session.get('user',None)
-    # Create a new ClubRequest instance and store the PDF content as binary data
-    if (session.get('position',None)=='c_mem'):
-        chain='c_sec'
-        club_record = Club.query.filter_by(club=session.get('user', None)).first()
-        if club_record and club_record.sec is not None:
-            user = club_record.sec
-        else:
-            raise Exception("No record found in Club table for the specified user")
-    
-    elif(session.get('position',None)=='c_sec'):
-        chain='c_fa'
-        club_record = Club.query.filter_by(sec=session.get('user', None)).first()
-        if club_record and club_record.fa is not None:
-            user = club_record.fa
-        else:
-            raise Exception("No record found in Club table for the specified user")
-    
-    new_request = ClubRequest(
-        club_name=session.get('user',None),
-        subject=subject,
-        description=description,
-        attachment=attachment,
-        approval_chain=chain,
-        curent=user,
-        money=money,
-        maker=maker
+    try:
+        subject = request.form['subject']
+        description = request.form['description']
+        attachment = request.files['attachment'].read()  # Read binary content of the uploaded file
+        money=request.form['money']
+        maker=session.get('user',None)
+        # Create a new ClubRequest instance and store the PDF content as binary data
+        if (session.get('position',None)=='c_mem'):
+            chain='c_sec'
+            club_record = Club.query.filter_by(club=session.get('user', None)).first()
+            if club_record and club_record.sec is not None:
+                user = club_record.sec
+            else:
+                raise Exception("No record found in Club table for the specified user")
+        
+        elif(session.get('position',None)=='c_sec'):
+            chain='c_fa'
+            club_record = Club.query.filter_by(sec=session.get('user', None)).first()
+            if club_record and club_record.fa is not None:
+                user = club_record.fa
+            else:
+                raise Exception("No record found in Club table for the specified user")
+        
+        new_request = ClubRequest(
+            club_name=session.get('user',None),
+            subject=subject,
+            description=description,
+            attachment=attachment,
+            approval_chain=chain,
+            curent=user,
+            money=money,
+            maker=maker
 
-    )
+        )
 
-    # Add the new request to the database session
-    db.session.add(new_request)
+        # Add the new request to the database session
+        db.session.add(new_request)
 
-    # Commit the transaction
-    db.session.commit()
+        # Commit the transaction
+        db.session.commit()
 
-    return 'Request submitted successfully'
-    # except Exception as e:
-    #     # If any error occurs, rollback the transaction
-    #     db.session.rollback()
-    #     return f'Error occurred: {str(e)}'
-
-
+        return redirect(url_for('print_club_requestsx'))
+    except Exception as e:
+        # If any error occurs, rollback the transaction
+        db.session.rollback()
+        return f'Error occurred: {str(e)}'
 
 
 
@@ -255,7 +256,9 @@ def upload_request():
 
 
 
-@app.route('/print_club_requests', methods=['POST'])
+
+
+@app.route('/print_club_requests', methods=['GET', 'POST'])
 def print_club_requests():
     user = session.get('user', None)
     if user:
@@ -265,11 +268,16 @@ def print_club_requests():
         return "No user session found."
     
 
-@app.route('/print_club_requestsx', methods=['POST'])
+@app.route('/print_club_requestsx', methods=['GET', 'POST'])
 def print_club_requestsx():
     user = session.get('user', None)
+    user2x=User.query.filter_by(username=user).first()
+    user2=user2x.position
     if user:
-        club_requests = ClubRequest.query.filter_by(maker=user).all()
+        if (user2=='chairSAP' or user2=='dean_std'):
+            club_requests = ClubRequest.query.all()
+        else:
+            club_requests = ClubRequest.query.filter_by(maker=user).all()
         return render_template('club_requestsx.html', club_requests=club_requests)
     else:
         return "No user session found."
@@ -312,51 +320,55 @@ def accept(request_id):
     user=session.get('user',None)
     user2x=User.query.filter_by(username=user).first()
     user2=user2x.position
-    print(user)
-    if(user2=='c_sec'):
-        print("_-------------------")
-        request_record = ClubRequest.query.get(request_id)
-        request_record.approval_chain='c_fa'
-        new_cur=Club.query.filter_by(sec=session.get('user', None)).first()
-        request_record.curent=new_cur.fa
-        db.session.commit()
-    elif(user2=='c_fa'):
-        request_record = ClubRequest.query.get(request_id)
-        if(request_record.money <= 15000):
-            request_record.approval = 'Approved'
-            db.session.commit()
-        else:
-            request_record.approval_chain='s_fa'
-            new_cur=Club.query.filter_by(fa=session.get('user', None)).first()
-            society = new_cur.societi
-            a = Societ.query.filter_by(societi = society).first()
-            request_record.curent = a.fa
-            db.session.commit()
-    elif(user2=='s_fa'):
-        request_record = ClubRequest.query.get(request_id)
-        if(request_record.money <= 15000):
-            request_record.approval = 'Approved'
-            db.session.commit()
-        else:
-            request_record.approval_chain='chairSAP'
-            a= User.query.filter_by(position='chairSAP').first()
-            request_record.curent = a.username
-            db.session.commit()
-    elif(user2=='chairSAP'):
-        request_record = ClubRequest.query.get(request_id)
-        if(request_record.money <= 50000):
-            request_record.approval = 'Approved'
-            db.session.commit()
-        else:
-            request_record.approval_chain='dean_std'
-            a= User.query.filter_by(position='dean_std').first()
-            request_record.curent = a.username
-            db.session.commit()
 
-    elif(user=='dean_std'):
-        request_record = ClubRequest.query.get(request_id)
-        request_record.approval = 'Approved'
-        db.session.commit()
+    request_record = ClubRequest.query.get(request_id)
+    print(request_record.approval)
+    if (request_record.approval != "Approved"):
+        if(user2=='c_sec'):
+            request_record = ClubRequest.query.get(request_id)
+            request_record.approval_chain='c_fa'
+            new_cur=Club.query.filter_by(sec=session.get('user', None)).first()
+            request_record.curent=new_cur.fa
+            db.session.commit()
+        elif(user2=='c_fa'):
+            request_record = ClubRequest.query.get(request_id)
+            new_cur=Club.query.filter_by(fa=session.get('user', None)).first()
+            if(request_record.money <= 15000 and new_cur.budget >= request_record.money):
+                request_record.approval = 'Approved'
+                new_cur.budget -=request_record.money
+                db.session.commit()
+            else:
+                request_record.approval_chain='s_fa'
+                new_cur=Club.query.filter_by(fa=session.get('user', None)).first()
+                society = new_cur.societi
+                a = Societ.query.filter_by(societi = society).first()
+                request_record.curent = a.fa
+                db.session.commit()
+        elif(user2=='s_fa'):
+            request_record = ClubRequest.query.get(request_id)
+            if(request_record.money <= 15000):
+                request_record.approval = 'Approved'
+                db.session.commit()
+            else:
+                request_record.approval_chain='chairSAP'
+                a= User.query.filter_by(position='chairSAP').first()
+                request_record.curent = a.username
+                db.session.commit()
+        elif(user2=='chairSAP'):
+            request_record = ClubRequest.query.get(request_id)
+            if(request_record.money <= 50000):
+                request_record.approval = 'Approved'
+                db.session.commit()
+            else:
+                request_record.approval_chain='dean_std'
+                a= User.query.filter_by(position='dean_std').first()
+                request_record.curent = a.username
+                db.session.commit()
+
+        elif(user2=='dean_std'):
+            request_record = ClubRequest.query.get(request_id)
+            request_record.approval = 'Approved'
+            db.session.commit()
 
 
     user = session.get('user', None)
@@ -376,7 +388,11 @@ def reject(request_id):
     user2x=User.query.filter_by(username=user).first()
     user2=user2x.position
     request_record = ClubRequest.query.get(request_id)
-    request_record.approval=f"Rejected by {user2} ({user})"
+    print(request_record.approval)
+    if (request_record.approval != "Approved"):
+        request_record = ClubRequest.query.get(request_id)
+        request_record.approval=f"Rejected by {user2} ({user})"
+        db.session.commit()
 
     user = session.get('user', None)
     if user:
@@ -388,6 +404,17 @@ def reject(request_id):
 
 
 
+
+scheduler = BackgroundScheduler()
+scheduler.start()
+def reset_budget():
+    # Update budget to 15000 for all clubs
+    clubs = Club.query.all()
+    for club in clubs:
+        club.budget = 15000
+    db.session.commit()
+
+    scheduler.add_job(reset_budget, 'cron', day=1)
 
 
 if __name__=="__main__":
