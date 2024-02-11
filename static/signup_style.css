@@ -51,7 +51,7 @@ select, select option {
     /* opacity: 0; */
 }
 
-.inin input, .inin button {
+.inin input, .inin button{
     color: #222;
     text-align: center;
     margin: 10px 0px;
@@ -76,7 +76,7 @@ select, select option {
 }
 
 
-.inin button:hover {
+.inin button:hover{
     color: rgb(244, 97, 100);
     background-color: #222;
     border: 1px solid rgb(244, 97, 100);
@@ -87,15 +87,28 @@ select, select option {
     transform: translateX(100px) scale(0.98);
 }
 
-p {
-    text-align: center;
-    letter-spacing: 2px;
+.nr button {
+    color: #111;
+    background-color: rgb(244, 97, 100);
+    border: none;
+    border-radius: 12px;
+    width: 150px;
+    height: 30px;
+    font-size: 16px;
+    transition: all 0.25s ease-out;
+    letter-spacing: 1px;
 }
 
-a {
-    text-decoration: none;
+.nr button:hover {
+    border: 1px solid rgb(244, 97, 100);
+    color: rgb(244, 97, 100);
+    background-color: #222;
+    cursor: pointer;
 }
 
-a:hover {
-    text-decoration: underline;
+.nr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 5px 110px;
 }

@@ -19,8 +19,8 @@ canvas {
 }
 
 table {
+    width: 90vw;
     min-width: 700px;
-    width: 1000px;
     border-collapse: collapse;
     text-align: center;
 }

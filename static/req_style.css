@@ -21,6 +21,7 @@ canvas {
 }
 
 form {
+    /* overflow-y: visible; */
     position: absolute;
     top: 50%;
     left: 50%;
@@ -49,11 +50,15 @@ form input, form textarea {
     resize: none;
 }
 
+form textarea:hover {
+    cursor: text;
+}
+
 form input:hover, form textarea:hover {
     cursor: pointer;
 }
 
-form #attach {
+form #attachment {
     width: 400px;
     height: 30px;
     background-color: #111;
@@ -62,6 +67,7 @@ form #attach {
 }
 
 form button {
+    /* transform: translate(0, -2px); */
     background-color: rgb(244, 97, 100);
     width: 160px;
     height: 40px;
@@ -72,6 +78,7 @@ form button {
     padding: 1px 3px;
     transition: all 0.25s ease-out;
     /* margin-right: 0; */
+    margin-left:384px;
 }
 
 form button:hover {
@@ -87,3 +94,27 @@ form textarea {
     height: 200px;
     padding: 15px;
 }
+
+.styled-in, form button {
+    font-size: 18px;
+    background-color: rgb(244, 97, 100);
+    color: #fff;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s ease-out;
+}
+
+.styled-in:hover, form button:hover {
+    border: 1px solid rgb(244, 97, 100);
+    background-color: #111;
+    cursor: pointer;
+    color: rgb(244, 97, 100);
+}
+
+.styled-in:active {
+    transform: translateX(100px) scale(0.98);
+}
+
+
